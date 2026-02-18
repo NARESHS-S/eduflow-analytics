@@ -12,6 +12,7 @@ import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import CreateTest from "./pages/teacher/CreateTest";
 import TeacherResults from "./pages/teacher/TeacherResults";
 import TeacherFeedback from "./pages/teacher/TeacherFeedback";
+import TeacherAnalytics from "./pages/teacher/TeacherAnalytics";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import AvailableTests from "./pages/student/AvailableTests";
 import TakeTest from "./pages/student/TakeTest";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/tests/create" element={<CreateTest />} />
               <Route path="/results" element={<TeacherResults />} />
               <Route path="/feedback" element={<TeacherFeedback />} />
+              <Route path="/teacher-analytics" element={<TeacherAnalytics />} />
               {/* Student routes */}
               <Route path="/tests" element={<AvailableTests />} />
               <Route path="/tests/:testId/take" element={<TakeTest />} />
