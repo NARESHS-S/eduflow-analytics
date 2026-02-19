@@ -2,12 +2,13 @@ import { useAuth } from "@/lib/auth-context";
 import { Navigate, Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  GraduationCap, LayoutDashboard, Plus, BarChart3, LogOut, FileText, MessageSquare, TrendingUp, User
+  GraduationCap, LayoutDashboard, Plus, BarChart3, LogOut, FileText, MessageSquare, TrendingUp, User, Settings
 } from "lucide-react";
 
 const teacherLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/tests/create", label: "Create Test", icon: Plus },
+  { to: "/manage-tests", label: "Manage Tests", icon: Settings },
   { to: "/results", label: "Results", icon: BarChart3 },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/teacher-analytics", label: "Analytics", icon: TrendingUp },
