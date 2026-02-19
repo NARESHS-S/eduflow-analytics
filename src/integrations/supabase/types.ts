@@ -58,21 +58,33 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cgpa: number | null
+          college_name: string | null
           created_at: string
+          current_year: number | null
+          department: string | null
           email: string
           full_name: string
           id: string
           updated_at: string
         }
         Insert: {
+          cgpa?: number | null
+          college_name?: string | null
           created_at?: string
+          current_year?: number | null
+          department?: string | null
           email: string
           full_name?: string
           id: string
           updated_at?: string
         }
         Update: {
+          cgpa?: number | null
+          college_name?: string | null
           created_at?: string
+          current_year?: number | null
+          department?: string | null
           email?: string
           full_name?: string
           id?: string
