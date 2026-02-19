@@ -18,6 +18,7 @@ import AvailableTests from "./pages/student/AvailableTests";
 import TakeTest from "./pages/student/TakeTest";
 import MyResults from "./pages/student/MyResults";
 import Analytics from "./pages/student/Analytics";
+import Profile from "./pages/student/Profile";
 import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/tests/:testId/take" element={<TakeTest />} />
               <Route path="/my-results" element={<MyResults />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

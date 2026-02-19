@@ -66,9 +66,15 @@ const AvailableTests = () => {
                     <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {test.duration_minutes} min</span>
                   )}
                 </div>
-                <Button className="w-full" onClick={() => navigate(`/tests/${test.id}/take`)}>
-                  {attemptCounts[test.id] ? "Retake Test" : "Start Test"}
-                </Button>
+                {attemptCounts[test.id] ? (
+                  <Button className="w-full" variant="secondary" disabled>
+                    Completed
+                  </Button>
+                ) : (
+                  <Button className="w-full" onClick={() => navigate(`/tests/${test.id}/take`)}>
+                    Start Test
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}

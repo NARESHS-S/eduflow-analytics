@@ -2,7 +2,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Navigate, Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  GraduationCap, LayoutDashboard, Plus, BarChart3, LogOut, FileText, MessageSquare, TrendingUp
+  GraduationCap, LayoutDashboard, Plus, BarChart3, LogOut, FileText, MessageSquare, TrendingUp, User
 } from "lucide-react";
 
 const teacherLinks = [
@@ -18,6 +18,7 @@ const studentLinks = [
   { to: "/tests", label: "Available Tests", icon: FileText },
   { to: "/my-results", label: "My Results", icon: BarChart3 },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/profile", label: "My Profile", icon: User },
 ];
 
 const AppLayout = () => {
