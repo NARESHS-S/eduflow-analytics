@@ -3,22 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, BarChart3, MessageSquare, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { FileText, Users, BarChart3, CheckCircle, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
+
+interface ActivityItem {
+  id: string;
+  type: "attempt" | "feedback" | "test_created";
+  message: string;
+  time: string;
+}
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({ tests: 0, published: 0, drafts: 0, totalStudents: 0, attempts: 0, avgScore: 0, feedbackCount: 0, passRate: 0 });
   const [recentAttempts, setRecentAttempts] = useState<any[]>([]);
   const [testBreakdown, setTestBreakdown] = useState<any[]>([]);
+  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data: tests } = await supabase.from("tests").select("id, title, is_published").eq("teacher_id", user.id);
+      const { data: tests } = await supabase.from("tests").select("id, title, is_published, created_at").eq("teacher_id", user.id).order("created_at", { ascending: false });
       const allTests = tests || [];
       const testIds = allTests.map(t => t.id);
       const published = allTests.filter(t => t.is_published).length;
@@ -26,6 +34,12 @@ const TeacherDashboard = () => {
       let attempts: any[] = [];
       let feedbackCount = 0;
       let uniqueStudents = new Set<string>();
+      const feed: ActivityItem[] = [];
+
+      // Add recent test creations to feed
+      allTests.slice(0, 3).forEach(t => {
+        feed.push({ id: `test-${t.id}`, type: "test_created", message: `Created test "${t.title}"`, time: t.created_at });
+      });
 
       if (testIds.length > 0) {
         const { data: att } = await supabase
@@ -37,18 +51,47 @@ const TeacherDashboard = () => {
         attempts = att || [];
         attempts.forEach(a => uniqueStudents.add(a.student_id));
 
+        // Add recent attempts to feed
+        attempts.slice(0, 5).forEach(a => {
+          feed.push({
+            id: `att-${a.id}`,
+            type: "attempt",
+            message: `${a.profiles?.full_name || "Student"} scored ${Number(a.score).toFixed(0)}% on "${a.tests?.title}"`,
+            time: a.completed_at,
+          });
+        });
+
         const { count } = await supabase
           .from("feedback")
           .select("id", { count: "exact", head: true })
           .eq("teacher_id", user.id);
         feedbackCount = count || 0;
+
+        // Recent feedback
+        const { data: recentFb } = await supabase
+          .from("feedback")
+          .select("id, message, created_at, test_attempts!feedback_attempt_id_fkey(tests!test_attempts_test_id_fkey(title))")
+          .eq("teacher_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        (recentFb || []).forEach(f => {
+          feed.push({
+            id: `fb-${f.id}`,
+            type: "feedback",
+            message: `Sent feedback on "${(f as any).test_attempts?.tests?.title || "a test"}"`,
+            time: f.created_at,
+          });
+        });
       }
+
+      // Sort feed by time
+      feed.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setActivityFeed(feed.slice(0, 8));
 
       const scores = attempts.map(a => Number(a.score) || 0);
       const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
       const passRate = scores.length ? Math.round((scores.filter(s => s >= 50).length / scores.length) * 100) : 0;
 
-      // Per-test breakdown
       const breakdown: Record<string, { title: string; attempts: number; avg: number }> = {};
       attempts.forEach(a => {
         if (!breakdown[a.test_id]) breakdown[a.test_id] = { title: a.tests?.title || "Test", attempts: 0, avg: 0 };
@@ -57,16 +100,7 @@ const TeacherDashboard = () => {
       });
       Object.values(breakdown).forEach(b => { b.avg = Math.round(b.avg / b.attempts); });
 
-      setStats({
-        tests: allTests.length,
-        published,
-        drafts: allTests.length - published,
-        totalStudents: uniqueStudents.size,
-        attempts: attempts.length,
-        avgScore,
-        feedbackCount,
-        passRate,
-      });
+      setStats({ tests: allTests.length, published, drafts: allTests.length - published, totalStudents: uniqueStudents.size, attempts: attempts.length, avgScore, feedbackCount, passRate });
       setRecentAttempts(attempts.slice(0, 10));
       setTestBreakdown(Object.values(breakdown));
     };
@@ -82,6 +116,21 @@ const TeacherDashboard = () => {
     { name: "Published", value: stats.published },
     { name: "Drafts", value: stats.drafts },
   ].filter(d => d.value > 0);
+
+  const formatTime = (t: string) => {
+    const diff = Date.now() - new Date(t).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const activityIcon = (type: string) => {
+    if (type === "attempt") return "📝";
+    if (type === "feedback") return "💬";
+    return "📋";
+  };
 
   return (
     <div className="space-y-8">
@@ -149,6 +198,30 @@ const TeacherDashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Activity Feed */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {activityFeed.length === 0 ? (
+            <p className="text-muted-foreground">No recent activity.</p>
+          ) : (
+            <div className="space-y-3">
+              {activityFeed.map(item => (
+                <div key={item.id} className="flex items-start gap-3 rounded-lg border p-3">
+                  <span className="text-lg">{activityIcon(item.type)}</span>
+                  <div className="flex-1">
+                    <p className="text-sm">{item.message}</p>
+                    <p className="text-xs text-muted-foreground">{formatTime(item.time)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {testBreakdown.length > 0 && (
         <Card>

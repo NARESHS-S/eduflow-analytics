@@ -3,15 +3,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Trophy, TrendingUp, MessageSquare } from "lucide-react";
+import { FileText, Trophy, TrendingUp, MessageSquare, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+interface ActivityItem {
+  id: string;
+  type: "test_completed" | "feedback_received";
+  message: string;
+  time: string;
+}
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({ testsCompleted: 0, avgScore: 0, bestScore: 0, feedbackCount: 0 });
   const [attempts, setAttempts] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<any[]>([]);
+  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +46,27 @@ const StudentDashboard = () => {
       }
       setFeedback(fb);
 
+      // Build activity feed
+      const feed: ActivityItem[] = [];
+      completed.slice(0, 5).forEach(a => {
+        feed.push({
+          id: `att-${a.id}`,
+          type: "test_completed",
+          message: `Completed "${a.tests?.title}" with ${Number(a.score).toFixed(0)}%`,
+          time: a.completed_at,
+        });
+      });
+      fb.slice(0, 5).forEach((f: any) => {
+        feed.push({
+          id: `fb-${f.id}`,
+          type: "feedback_received",
+          message: `Received feedback on "${f.test_attempts?.tests?.title || "a test"}"`,
+          time: f.created_at,
+        });
+      });
+      feed.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setActivityFeed(feed.slice(0, 8));
+
       const scores = completed.map(a => Number(a.score) || 0);
       setStats({
         testsCompleted: completed.length,
@@ -53,6 +82,15 @@ const StudentDashboard = () => {
     name: a.tests?.title?.substring(0, 15) || `Test ${i + 1}`,
     score: Number(a.score) || 0,
   }));
+
+  const formatTime = (t: string) => {
+    const diff = Date.now() - new Date(t).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
 
   return (
     <div className="space-y-8">
@@ -100,6 +138,30 @@ const StudentDashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Activity Feed */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {activityFeed.length === 0 ? (
+            <p className="text-muted-foreground">No recent activity yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {activityFeed.map(item => (
+                <div key={item.id} className="flex items-start gap-3 rounded-lg border p-3">
+                  <span className="text-lg">{item.type === "test_completed" ? "📝" : "💬"}</span>
+                  <div className="flex-1">
+                    <p className="text-sm">{item.message}</p>
+                    <p className="text-xs text-muted-foreground">{formatTime(item.time)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {feedback.length > 0 && (
         <Card>
