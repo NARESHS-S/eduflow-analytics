@@ -4,6 +4,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const TeacherResults = () => {
@@ -43,11 +45,38 @@ const TeacherResults = () => {
     return <Badge variant="destructive">Needs Improvement</Badge>;
   };
 
+  const exportCSV = () => {
+    if (attempts.length === 0) return;
+    const testTitle = tests.find(t => t.id === selectedTest)?.title || "results";
+    const headers = ["Student Name", "Email", "Score (%)", "Earned Points", "Total Points", "Completed At"];
+    const rows = attempts.map((a: any) => [
+      a.profiles?.full_name || "",
+      a.profiles?.email || "",
+      Number(a.score).toFixed(1),
+      a.earned_points ?? 0,
+      a.total_points ?? 0,
+      a.completed_at ? new Date(a.completed_at).toLocaleString() : "",
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${testTitle.replace(/[^a-z0-9]/gi, "_")}_results.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Student Results</h1>
-        <p className="text-muted-foreground">View student performance on your tests</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Student Results</h1>
+          <p className="text-muted-foreground">View student performance on your tests</p>
+        </div>
+        <Button variant="outline" onClick={exportCSV} disabled={attempts.length === 0} className="gap-2">
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       <Select value={selectedTest} onValueChange={setSelectedTest}>
