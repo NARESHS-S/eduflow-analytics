@@ -22,6 +22,7 @@ import MyResults from "./pages/student/MyResults";
 import Analytics from "./pages/student/Analytics";
 import Profile from "./pages/student/Profile";
 import Dashboard from "./pages/Dashboard";
+import Leaderboard from "./pages/Leaderboard";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/my-results" element={<MyResults />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
